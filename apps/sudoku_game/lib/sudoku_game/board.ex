@@ -35,18 +35,16 @@ defmodule SudokuGame.Board do
   @type position_error() :: {x_pos(), y_pos(), content()}
 
   @type t() :: %__MODULE__{
-    cells: %{optional(1..9) => 1..9 | nil},
-    valid?: boolean(),
-    errors: [position_error()],
-    started_at: NaiveDateTime.t()
-  }
+          cells: %{optional(1..9) => 1..9 | nil},
+          valid?: boolean(),
+          errors: [position_error()],
+          started_at: NaiveDateTime.t()
+        }
 
-  defstruct [
-    cells: %{},
-    valid?: true,
-    errors: [],
-    started_at: nil
-  ]
+  defstruct cells: %{},
+            valid?: true,
+            errors: [],
+            started_at: nil
 
   @max_attempts 3
   @empty_attempts 81
@@ -73,7 +71,7 @@ defmodule SudokuGame.Board do
   Put a `value` inside of the `board` for a given position (`x` and `y`).
   """
   def put(%__MODULE__{cells: cells} = board, x, y, value) when value in 1..9 or is_nil(value) do
-    %__MODULE__{board|cells: put_in(cells[x][y], value)}
+    %__MODULE__{board | cells: put_in(cells[x][y], value)}
   end
 
   @doc """
@@ -102,11 +100,14 @@ defmodule SudokuGame.Board do
   def unsolve(board, attempts \\ @max_attempts), do: unsolve(board, attempts, @empty_attempts)
 
   defp unsolve(board, 0, _empty_attempts), do: board
+
   defp unsolve(board, attempts, empty_attempts) do
     row = Enum.random(1..9)
     col = Enum.random(1..9)
+
     if get(board, col, row) do
       newboard = put(board, col, row, nil)
+
       if solutions(newboard) != 1 do
         unsolve(board, attempts - 1, @empty_attempts)
       else
@@ -116,7 +117,6 @@ defmodule SudokuGame.Board do
       unsolve(board, attempts, empty_attempts - 1)
     end
   end
-
 
   @doc """
   Give us the number of solutions the board has. It's a brute-force way
@@ -130,7 +130,8 @@ defmodule SudokuGame.Board do
   def solutions(board), do: solutions(board, 1, 1, 0)
 
   defp solutions(_board, 10, 9, solutions), do: solutions + 1
-  defp solutions(board, 10, y, solutions), do: solutions(board, 1, y+1, solutions)
+  defp solutions(board, 10, y, solutions), do: solutions(board, 1, y + 1, solutions)
+
   defp solutions(board, x, y, solutions) do
     if get(board, x, y) do
       solutions(board, x + 1, y, solutions)
@@ -144,7 +145,8 @@ defmodule SudokuGame.Board do
   end
 
   defp solutions(_board, _x, _y, [], solutions), do: solutions
-  defp solutions(board, x, y, [i|rest], solutions) do
+
+  defp solutions(board, x, y, [i | rest], solutions) do
     solutions =
       board
       |> put(x, y, i)
@@ -160,7 +162,8 @@ defmodule SudokuGame.Board do
   def solve(board), do: solve(board, 1, 1)
 
   defp solve(board, 10, 9), do: board
-  defp solve(board, 10, y), do: solve(board, 1, y+1)
+  defp solve(board, 10, y), do: solve(board, 1, y + 1)
+
   defp solve(board, x, y) do
     if get(board, x, y) do
       solve(board, x + 1, y)
@@ -174,7 +177,8 @@ defmodule SudokuGame.Board do
   end
 
   defp solve(_board, _x, _y, []), do: :no_solution
-  defp solve(board, x, y, [i|rest]) do
+
+  defp solve(board, x, y, [i | rest]) do
     board
     |> put(x, y, i)
     |> solve(x + 1, y)
@@ -189,9 +193,10 @@ defmodule SudokuGame.Board do
   """
   @spec is_completed?(t()) :: boolean()
   def is_completed?(%__MODULE__{valid?: false}), do: false
+
   def is_completed?(%__MODULE__{cells: cells}) do
-    not Enum.any?(1..9, fn(x) ->
-      Enum.any?(1..9, fn(y) ->
+    not Enum.any?(1..9, fn x ->
+      Enum.any?(1..9, fn y ->
         is_nil(cells[x][y])
       end)
     end)
@@ -203,8 +208,8 @@ defmodule SudokuGame.Board do
   """
   def validate(%__MODULE__{} = board) do
     case get_invalid_positions(board) do
-      [] -> %__MODULE__{board|valid?: true, errors: []}
-      errors -> %__MODULE__{board|valid?: false, errors: errors}
+      [] -> %__MODULE__{board | valid?: true, errors: []}
+      errors -> %__MODULE__{board | valid?: false, errors: errors}
     end
   end
 
@@ -212,6 +217,7 @@ defmodule SudokuGame.Board do
     for i <- 1..8, j <- (i + 1)..9 do
       {x1, y1, ic} = Enum.at(data, i - 1)
       {x2, y2, jc} = Enum.at(data, j - 1)
+
       if not is_nil(ic) and not is_nil(jc) and ic == jc do
         {{x1, y1}, {x2, y2}, ic}
       end
@@ -280,12 +286,12 @@ defmodule SudokuGame.Board do
   def get_invalid_positions(%__MODULE__{} = board) do
     errors_lines =
       for i <- 1..9 do
-        # check rows
+        #  check rows
         errors_rows =
           get_row(board, i)
           |> get_errors()
 
-        # check columns
+        #  check columns
         errors_cols =
           get_col(board, i)
           |> get_errors()
@@ -293,7 +299,7 @@ defmodule SudokuGame.Board do
         errors_rows ++ errors_cols
       end
 
-    # check squares
+    #  check squares
     errors_squares =
       for xo <- [0, 3, 6], yo <- [0, 3, 6] do
         get_square(board, xo, yo)
@@ -334,11 +340,13 @@ defmodule SudokuGame.Board do
     xo = div(x - 1, 3) * 3
     yo = div(y - 1, 3) * 3
     square = get_square(board, xo, yo)
+
     nums =
-      row ++ col ++ square
+      (row ++ col ++ square)
       |> Enum.map(fn {_, _, n} -> n end)
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
+
     for i <- 1..9, i not in nums, do: i
   end
 
@@ -392,13 +400,13 @@ defmodule SudokuGame.Board do
   struct data or the list generated by `Enum.to_list/1`.
   """
   def to_string(%_{cells: cells}) do
-    draw(fn(xo, yo, x, y) ->
+    draw(fn xo, yo, x, y ->
       " #{cells[x + xo][y + yo] || " "} "
     end)
   end
 
   def to_string(board) when is_list(board) do
-    draw(fn(xo, yo, x, y) ->
+    draw(fn xo, yo, x, y ->
       board
       |> Enum.at(y + yo - 1)
       |> Enum.at(x + xo - 1)
@@ -441,15 +449,15 @@ defmodule SudokuGame.Board do
   - `valid?`: same as `valid?` from board.
   """
   def get_stats(board) do
-    counters =
-      for i <- 1..9, into: %{}, do: {i, 9}
+    counters = for i <- 1..9, into: %{}, do: {i, 9}
 
     missing =
       for x <- 1..9, y <- 1..9, reduce: counters do
         counters ->
           idx = board.cells[x][y]
+
           if value = counters[idx] do
-            %{counters|idx => value - 1}
+            %{counters | idx => value - 1}
           else
             counters
           end
@@ -466,6 +474,7 @@ defmodule SudokuGame.Board do
       end
 
     now = NaiveDateTime.utc_now()
+
     %{
       missing: missing,
       empty: 81 - empty,
@@ -506,6 +515,7 @@ defmodule SudokuGame.Board do
     def member?(%_{cells: cells}, {x, y, v}) do
       {:ok, cells[x][y] == v}
     end
+
     def member?(_, _), do: {:error, __MODULE__}
 
     def reduce(board, acc, fun) do

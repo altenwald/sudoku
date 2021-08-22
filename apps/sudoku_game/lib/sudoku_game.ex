@@ -3,9 +3,7 @@ defmodule SudokuGame do
 
   alias SudokuGame.Board
 
-  defstruct [
-    board: Board.new()
-  ]
+  defstruct board: Board.new()
 
   def start_link() do
     GenServer.start_link(__MODULE__, [])
@@ -52,12 +50,12 @@ defmodule SudokuGame do
 
     if board.valid? do
       if Board.is_completed?(board) do
-        {:reply, {:ok, :complete}, %__MODULE__{state|board: board}}
+        {:reply, {:ok, :complete}, %__MODULE__{state | board: board}}
       else
-        {:reply, {:ok, :continue}, %__MODULE__{state|board: board}}
+        {:reply, {:ok, :continue}, %__MODULE__{state | board: board}}
       end
     else
-      {:reply, {:error, board.errors}, %__MODULE__{state|board: board}}
+      {:reply, {:error, board.errors}, %__MODULE__{state | board: board}}
     end
   end
 
@@ -75,6 +73,6 @@ defmodule SudokuGame do
 
   @impl GenServer
   def handle_cast(:restart, state) do
-    {:noreply, %__MODULE__{state|board: Board.generate()}}
+    {:noreply, %__MODULE__{state | board: Board.generate()}}
   end
 end

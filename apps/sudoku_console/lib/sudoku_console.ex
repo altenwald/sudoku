@@ -1,5 +1,4 @@
 defmodule SudokuConsole do
-
   def start() do
     {:ok, pid} = SudokuGame.start_link()
     SudokuGame.restart(pid)
@@ -23,17 +22,20 @@ defmodule SudokuConsole do
     x = gets("X=")
     y = gets("Y=")
     n = gets_or_nil("Num=")
+
     case SudokuGame.play(pid, x, y, n) do
       {:error, errors} ->
         banner(pid)
         show_errors(errors)
         SudokuGame.play(pid, x, y, nil)
         loop(pid)
+
       {:ok, :continue} ->
         if continue?() do
           banner(pid)
           loop(pid)
         end
+
       {:ok, :complete} ->
         game_over(pid)
     end
@@ -48,7 +50,9 @@ defmodule SudokuConsole do
 
   defp gets(prompt) do
     case IO.gets(prompt) do
-      <<i::size(8), "\n">> when i in ?1..?9 -> i - ?0
+      <<i::size(8), "\n">> when i in ?1..?9 ->
+        i - ?0
+
       _ ->
         IO.puts("incorrect number! valid: 1-9")
         gets(prompt)
@@ -57,9 +61,15 @@ defmodule SudokuConsole do
 
   defp continue?() do
     case IO.gets("continue [Y/n]? ") do
-      "\n" -> true
-      <<i::size(8), "\n">> when i in [?y, ?Y, ?s, ?S] -> true
-      <<i::size(8), "\n">> when i in [?n, ?N] -> false
+      "\n" ->
+        true
+
+      <<i::size(8), "\n">> when i in [?y, ?Y, ?s, ?S] ->
+        true
+
+      <<i::size(8), "\n">> when i in [?n, ?N] ->
+        false
+
       _ ->
         IO.puts("incorrect answer!")
         continue?()
@@ -67,15 +77,20 @@ defmodule SudokuConsole do
   end
 
   defp show_errors([]), do: :ok
-  defp show_errors([{{x1, y1}, {x2, y2}, value}|rest]) do
+
+  defp show_errors([{{x1, y1}, {x2, y2}, value} | rest]) do
     IO.puts("ERROR: (#{x1},#{y1}) collides with (#{x2},#{y2}) (value=#{value})")
     show_errors(rest)
   end
 
   defp gets_or_nil(prompt) do
     case IO.gets(prompt) do
-      <<i::size(8), "\n">> when i in ?0..?9 -> i - ?0
-      <<"\n">> -> nil
+      <<i::size(8), "\n">> when i in ?0..?9 ->
+        i - ?0
+
+      <<"\n">> ->
+        nil
+
       _ ->
         IO.puts("incorrect number! valid: 0-9 or empty")
         gets_or_nil(prompt)
@@ -96,14 +111,15 @@ defmodule SudokuConsole do
 
   defp stats(pid) do
     stats = SudokuGame.get_stats(pid)
+
     IO.puts(
       "------------------------------------------------------------------------\n" <>
-      "missing: 1=#{stats.missing[1]} 2=#{stats.missing[2]} 3=#{stats.missing[3]} " <>
-      "4=#{stats.missing[4]} 5=#{stats.missing[5]} 6=#{stats.missing[6]} " <>
-      "7=#{stats.missing[7]} 8=#{stats.missing[8]} 9=#{stats.missing[9]} " <>
-      "     empty: #{stats.empty}\n" <>
-      "time: #{stats.secs_played} seconds\n" <>
-      "------------------------------------------------------------------------\n"
+        "missing: 1=#{stats.missing[1]} 2=#{stats.missing[2]} 3=#{stats.missing[3]} " <>
+        "4=#{stats.missing[4]} 5=#{stats.missing[5]} 6=#{stats.missing[6]} " <>
+        "7=#{stats.missing[7]} 8=#{stats.missing[8]} 9=#{stats.missing[9]} " <>
+        "     empty: #{stats.empty}\n" <>
+        "time: #{stats.secs_played} seconds\n" <>
+        "------------------------------------------------------------------------\n"
     )
   end
 end

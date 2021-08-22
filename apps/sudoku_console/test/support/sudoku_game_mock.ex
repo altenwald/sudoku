@@ -12,7 +12,7 @@ defmodule SudokuGameMock do
   end
 
   def handle_call(key, _from, {pid, responses}) do
-    [response|rest_responses] = responses[key]
+    [response | rest_responses] = responses[key]
     send(pid, {self(), response})
     {:reply, response, {pid, Map.put(responses, key, rest_responses)}}
   end
