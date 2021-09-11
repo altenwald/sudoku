@@ -1,4 +1,6 @@
 defmodule SudokuConsole do
+  @highlight_cell IO.ANSI.green_background()
+
   def start() do
     {:ok, pid} = SudokuGame.start_link()
     SudokuGame.restart(pid)
@@ -19,25 +21,29 @@ defmodule SudokuConsole do
     board(pid)
     stats(pid)
 
-    x = gets("X=")
-    y = gets("Y=")
-    n = gets_or_nil("Num=")
-
-    case SudokuGame.play(pid, x, y, n) do
-      {:error, errors} ->
-        banner(pid)
-        show_errors(errors)
-        SudokuGame.play(pid, x, y, nil)
-        loop(pid)
-
-      {:ok, :continue} ->
-        if continue?() do
+    with "p" <- get_options("(P)lay, (Q)uit? [Pq]", ~w[p q], "p"),
+         n <- gets_or_nil("Num="),
+         board(pid, n),
+         x <- gets("X="),
+         y <- gets("Y=") do
+      case SudokuGame.play(pid, x, y, n) do
+        {:ok, :continue} ->
           banner(pid)
           loop(pid)
-        end
 
-      {:ok, :complete} ->
-        game_over(pid)
+        {:error, errors} ->
+          banner(pid)
+          show_errors(errors)
+          SudokuGame.play(pid, x, y, nil)
+          loop(pid)
+
+        {:ok, :complete} ->
+          game_over(pid)
+      end
+    else
+      "q" ->
+        IO.puts("Use SudokuConsole.start/1 with the returned pid to continue.")
+        {:ok, pid}
     end
   end
 
@@ -48,6 +54,20 @@ defmodule SudokuConsole do
     IO.puts("G A M E    O V E R")
   end
 
+  defp get_options(prompt, valid_options, default) do
+    with <<option::binary-size(1), "\n">> <- String.downcase(IO.gets(prompt)),
+         true <- option in valid_options do
+      option
+    else
+      <<"\n">> ->
+        default
+
+      _ ->
+        IO.puts("incorrect option! valid: #{Enum.join(valid_options, ", ")}")
+        get_options(prompt, valid_options, default)
+    end
+  end
+
   defp gets(prompt) do
     case IO.gets(prompt) do
       <<i::size(8), "\n">> when i in ?1..?9 ->
@@ -56,23 +76,6 @@ defmodule SudokuConsole do
       _ ->
         IO.puts("incorrect number! valid: 1-9")
         gets(prompt)
-    end
-  end
-
-  defp continue?() do
-    case IO.gets("continue [Y/n]? ") do
-      "\n" ->
-        true
-
-      <<i::size(8), "\n">> when i in [?y, ?Y, ?s, ?S] ->
-        true
-
-      <<i::size(8), "\n">> when i in [?n, ?N] ->
-        false
-
-      _ ->
-        IO.puts("incorrect answer!")
-        continue?()
     end
   end
 
@@ -106,6 +109,12 @@ defmodule SudokuConsole do
   defp board(pid) do
     SudokuGame.get_board(pid)
     |> SudokuGame.Board.to_string()
+    |> IO.puts()
+  end
+
+  defp board(pid, n) do
+    SudokuGame.get_board(pid)
+    |> SudokuGame.Board.to_string(n, &"#{@highlight_cell}#{&1}#{IO.ANSI.reset()}")
     |> IO.puts()
   end
 
