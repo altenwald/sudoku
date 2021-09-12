@@ -31,11 +31,13 @@ defmodule SudokuGame.Board do
 
   @type x_pos() :: 1..9
   @type y_pos() :: 1..9
+  @type square_pos() :: 0 | 3 | 6
+
   @type content :: nil | 1..9
-  @type position_error() :: {x_pos(), y_pos(), content()}
+  @type position_error() :: {{x_pos(), y_pos()}, {x_pos(), y_pos()}, content()}
 
   @type t() :: %__MODULE__{
-          cells: %{optional(1..9) => 1..9 | nil},
+          cells: %{x_pos() => %{y_pos() => content()}},
           valid?: boolean(),
           errors: [position_error()],
           started_at: NaiveDateTime.t()
@@ -46,9 +48,29 @@ defmodule SudokuGame.Board do
             errors: [],
             started_at: nil
 
+  @typedoc """
+  In use for `get_stats/1`, the map contains:
+
+    - `missing`: a list of the missing numbers to be put into the board,
+    as a map where the key is the number and the value the count of the
+    missing elements.
+    - `empty`: the empty positions into the board. Only counter.
+    - `sec_played`: the amount of time played (in seconds).
+    - `errors`: a list of errors, copied from `errors` from board.
+    - `valid?`: same as `valid?` from board.
+  """
+  @type stats_map() :: %{
+    missing: [0..9],
+    empty: 0..81,
+    secs_played: non_neg_integer(),
+    errors: [position_error()],
+    valid?: boolean()
+  }
+
   @max_attempts 3
   @empty_attempts 81
 
+  @spec new :: t()
   @doc """
   Generates a new board completely empty.
   """
@@ -67,6 +89,7 @@ defmodule SudokuGame.Board do
     for i <- 1..9, into: %{}, do: {i, nil}
   end
 
+  @spec put(t(), x_pos(), y_pos(), content()) :: t()
   @doc """
   Put a `value` inside of the `board` for a given position (`x` and `y`).
   """
@@ -74,11 +97,13 @@ defmodule SudokuGame.Board do
     %__MODULE__{board | cells: put_in(cells[x][y], value)}
   end
 
+  @spec get(t(), x_pos(), y_pos()) :: content()
   @doc """
   Get the value inside of the `board` for a given position (`x` and `y`).
   """
   def get(%__MODULE__{cells: cells}, x, y), do: cells[x][y]
 
+  @spec generate :: t()
   @doc """
   Generate a Sudoku board to be solved. The generation of the board is using
   the functions `new/0`, `solve/0` and `unsolve/1` with the default attempts
@@ -91,6 +116,7 @@ defmodule SudokuGame.Board do
     |> unsolve(@max_attempts)
   end
 
+  @spec unsolve(t(), non_neg_integer()) :: t()
   @doc """
   Clear as many cells as possible, randomly while it's granted an only one
   solution for the board. If the number of attempts is increased, it's
@@ -118,6 +144,7 @@ defmodule SudokuGame.Board do
     end
   end
 
+  @spec solutions(t()) :: non_neg_integer()
   @doc """
   Give us the number of solutions the board has. It's a brute-force way
   to know how many solutions could have the board. If you use it with a
@@ -155,6 +182,7 @@ defmodule SudokuGame.Board do
     solutions(board, x, y, rest, solutions)
   end
 
+  @spec solve(t()) :: t()
   @doc """
   Solve a sudoku board (if possible). You get a board with the solved
   solution inside or the throwed atom `:no_solution`.
@@ -202,6 +230,7 @@ defmodule SudokuGame.Board do
     end)
   end
 
+  @spec validate(t()) :: t()
   @doc """
   Validate the board. Ensure the numbers placed into the board
   are legal. The values for `valid?` and `errors` are populated accordingly.
@@ -225,6 +254,7 @@ defmodule SudokuGame.Board do
     |> Enum.reject(&is_nil/1)
   end
 
+  @spec get_row(t(), x_pos()) :: [content()]
   @doc """
   Get a row from a board based on the second parameter of the function.
   """
@@ -232,6 +262,7 @@ defmodule SudokuGame.Board do
     Enum.map(1..9, &{&1, i, get(board, &1, i)})
   end
 
+  @spec get_col(t(), y_pos()) :: [content()]
   @doc """
   Get a column from a board based on the second parameter of the function.
   """
@@ -239,6 +270,7 @@ defmodule SudokuGame.Board do
     Enum.map(1..9, &{i, &1, get(board, i, &1)})
   end
 
+  @spec get_square(t(), square_pos(), square_pos()) :: [content()]
   @doc """
   Get a square from a board. The board is splitted into 9 squares. The first
   one is placed including the cells (1,1), (2,1), (3,1), (1,2), (2,2), (3,2),
@@ -255,6 +287,7 @@ defmodule SudokuGame.Board do
     end
   end
 
+  @spec get_invalid_positions(t()) :: [position_error()]
   @doc """
   Retrieve the invalid possitions (if any). If the board isn't valid we can
   retrieve the invalid positions. This function is used internally by
@@ -310,6 +343,7 @@ defmodule SudokuGame.Board do
     |> Enum.uniq()
   end
 
+  @spec possible_values(t(), x_pos(), y_pos()) :: [1..9]
   @doc """
   Give us the possible values for an empty position into the board (given by
   `x` and `y`). The result is a list of numbers ordered.
@@ -350,6 +384,7 @@ defmodule SudokuGame.Board do
     for i <- 1..9, i not in nums, do: i
   end
 
+  @spec to_list(t()) :: [[0..9]]
   @doc """
   Convert the board into a list of lists.
 
@@ -395,6 +430,9 @@ defmodule SudokuGame.Board do
     end
   end
 
+  @spec to_string(t() | [[0..9]]) :: String.t()
+  @spec to_string(t() | [[0..9]], content()) :: String.t()
+  @spec to_string(t() | [[0..9]], content(), (1..9 -> String.t())) :: String.t()
   @doc """
   Show the board from SudokuGame.Board. We can pass or the board
   struct data or the list generated by `Enum.to_list/1`.
@@ -414,8 +452,8 @@ defmodule SudokuGame.Board do
   def to_string(board, highlight_num, highlight_fun) when is_list(board) do
     draw(fn xo, yo, x, y ->
       board
-      |> Enum.at(y + yo - 1)
-      |> Enum.at(x + xo - 1)
+      |> Enum.at(y + yo - 1, [])
+      |> Enum.at(x + xo - 1, 0)
       |> case do
         0 -> "   "
         ^highlight_num -> " #{highlight_fun.(highlight_num)} "
@@ -444,6 +482,7 @@ defmodule SudokuGame.Board do
     |> Enum.join()
   end
 
+  @spec get_stats(t()) :: stats_map()
   @doc """
   Get the stats for the current game. It's getting the following data:
 
@@ -535,6 +574,7 @@ defmodule SudokuGame.Board do
     Facility to show into the shell, using `IO.puts/1` (mainly), the board.
     """
 
+    @spec to_string(SudokuGame.Board.t()) :: String.t()
     @doc """
     Show the board from SudokuGame.Board.
     """

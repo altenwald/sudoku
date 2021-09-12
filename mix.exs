@@ -17,7 +17,8 @@ defmodule Sudoku.MixProject do
   # Run "mix help deps" for examples and options.
   defp deps do
     [
-      {:gen_state_machine, "~> 3.0"}
+      {:gen_state_machine, "~> 3.0"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
     ]
   end
 end

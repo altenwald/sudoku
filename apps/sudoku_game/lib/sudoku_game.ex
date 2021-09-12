@@ -3,41 +3,57 @@ defmodule SudokuGame do
 
   alias SudokuGame.Board
 
+  @type t() :: %__MODULE__{
+    board: Board.t()
+  }
+
   defstruct board: Board.new()
 
+  @spec start_link() :: GenServer.on_start()
   def start_link() do
     GenServer.start_link(__MODULE__, [])
   end
 
+  @spec start_link(GenServer.name()) :: GenServer.on_start()
   def start_link(name) do
     GenServer.start_link(__MODULE__, [], name: name)
   end
 
+  @spec stop(GenServer.server()) :: :ok
   def stop(pid) do
     GenServer.stop(pid)
   end
 
+  @spec play(GenServer.server(), Board.x_pos(), Board.y_pos(), Board.content()) ::
+    {:ok, :complete} |
+    {:ok, :continue} |
+    {:error, [Board.position_error()]}
   def play(pid \\ __MODULE__, x, y, v) do
     GenServer.call(pid, {:play, x, y, v})
   end
 
+  @spec get_board(GenServer.server()) :: [[0..9]]
   def get_board(pid \\ __MODULE__) do
     GenServer.call(pid, :get_board)
   end
 
+  @spec is_completed?(GenServer.server()) :: boolean()
   def is_completed?(pid \\ __MODULE__) do
     GenServer.call(pid, :is_completed?)
   end
 
+  @spec restart(GenServer.server()) :: :ok
   def restart(pid \\ __MODULE__) do
     GenServer.cast(pid, :restart)
   end
 
+  @spec get_stats(GenServer.server()) :: Board.stats_map()
   def get_stats(pid \\ __MODULE__) do
     GenServer.call(pid, :get_stats)
   end
 
   @impl GenServer
+  @spec init([]) :: {:ok, t()}
   def init([]) do
     {:ok, %__MODULE__{}}
   end

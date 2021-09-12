@@ -2,10 +2,11 @@ defmodule SudokuConsole do
   @highlight_cell IO.ANSI.green_background()
 
   def start() do
-    {:ok, pid} = SudokuGame.start_link()
-    SudokuGame.restart(pid)
-    banner(pid)
-    loop(pid)
+    with {:ok, pid} <- SudokuGame.start_link() do
+      SudokuGame.restart(pid)
+      banner(pid)
+      loop(pid)
+    end
   end
 
   def start(pid) do
@@ -52,6 +53,7 @@ defmodule SudokuConsole do
     stats(pid)
     SudokuGame.stop(pid)
     IO.puts("G A M E    O V E R")
+    :ok
   end
 
   defp get_options(prompt, valid_options, default) do
