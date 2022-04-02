@@ -8,8 +8,8 @@ defmodule SudokuGame.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: SudokuGame.Worker.start_link(arg)
-      # {SudokuGame.Worker, arg}
+      {Registry, keys: :unique, name: SudokuGame.Game.Registry},
+      {DynamicSupervisor, strategy: :one_for_one, name: SudokuGame.Games}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
