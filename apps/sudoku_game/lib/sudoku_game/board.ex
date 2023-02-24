@@ -57,12 +57,12 @@ defmodule SudokuGame.Board do
     - `valid?`: same as `valid?` from board.
   """
   @type stats_map() :: %{
-    missing: [0..9],
-    empty: 0..81,
-    secs_played: non_neg_integer(),
-    errors: [position_error()],
-    valid?: boolean()
-  }
+          missing: [0..9],
+          empty: 0..81,
+          secs_played: non_neg_integer(),
+          errors: [position_error()],
+          valid?: boolean()
+        }
 
   @max_attempts 3
   @empty_attempts 81
@@ -407,7 +407,7 @@ defmodule SudokuGame.Board do
     for i <- 1..9, i not in nums, do: i
   end
 
-  @spec to_list(t()) :: [[0..9]]
+  @spec to_list(t()) :: [[1..9 | nil]]
   @doc """
   Convert the board into a list of lists.
 
@@ -416,15 +416,15 @@ defmodule SudokuGame.Board do
       iex> Board.new()
       iex> |> Board.to_list()
       [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil]
       ]
 
       iex> alias SudokuGame.Board
@@ -434,21 +434,21 @@ defmodule SudokuGame.Board do
       iex> |> Board.put(3, 1, 3)
       iex> |> Board.to_list()
       [
-        [1, 2, 3, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        [1, 2, 3, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil, nil, nil]
       ]
   """
   def to_list(%__MODULE__{cells: cells}) do
     for y <- 1..9 do
       for x <- 1..9 do
-        cells[x][y] || 0
+        cells[x][y]
       end
     end
   end
@@ -514,15 +514,15 @@ defmodule SudokuGame.Board do
         iex> |> Board.put(3, 1, 3)
         iex> |> Enum.to_list()
         [
-          [1, 2, 3, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          [1, 2, 3, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil],
+          [nil, nil, nil, nil, nil, nil, nil, nil, nil]
         ]
     """
 

@@ -1,0 +1,2 @@
+import SudokuConsole
+SudokuConsole.start()

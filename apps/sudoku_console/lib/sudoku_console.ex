@@ -1,64 +1,109 @@
 defmodule SudokuConsole do
   alias SudokuGame.Board
-  import Kernel, except: [to_string: 1]
 
   @highlight_cell IO.ANSI.green_background()
 
   def start do
-    with {:ok, pid} <- SudokuGame.start(__MODULE__) do
-      SudokuGame.restart(pid)
-      banner(pid)
-      loop(pid)
+    module = to_string(__MODULE__)
+
+    with {:ok, board_pid} <- SudokuGame.start(module) do
+      start(board_pid)
     end
   end
 
-  def start(board) when is_list(board) do
-    board = Board.new(board)
-    with {:ok, pid} <- SudokuGame.start(__MODULE__, board) do
-      banner(pid)
-      loop(pid)
+  def start(board_list) when is_list(board_list) do
+    board = Board.new(board_list)
+    module = to_string(__MODULE__)
+
+    with {:ok, board_pid} <- SudokuGame.start(module, board) do
+      start(board_pid)
     end
+  end
+
+  def start(board_pid) when is_pid(board_pid) do
+    :ok = :persistent_term.put({__MODULE__, :chosen, board_pid}, nil)
+    banner(board_pid)
+    render(board_pid)
   end
 
   def continue do
-    with {:error, {:already_started, pid}} <- SudokuGame.start(__MODULE__) do
-      banner(pid)
-      loop(pid)
+    module = to_string(__MODULE__)
+
+    with {:error, {:already_started, pid}} <- SudokuGame.start(module) do
+      continue(pid)
     end
+  end
+
+  def continue(board_pid) when is_pid(board_pid) do
+    banner(board_pid)
+    render(board_pid)
   end
 
   def stop do
     SudokuGame.stop(__MODULE__)
   end
 
-  defp loop(pid) do
-    board(pid)
-    stats(pid)
+  def stop(board_pid) when is_pid(board_pid) do
+    SudokuGame.stop(board_pid)
+  end
 
-    with "p" <- get_options("(P)lay, (Q)uit? [Pq]", ~w[p q], "p"),
-         n <- gets_or_nil("Num="),
-         board(pid, n),
-         x <- gets("X="),
-         y <- gets("Y=") do
+  defp render(pid) do
+    if n = :persistent_term.get({__MODULE__, :chosen, pid}, nil) do
+      board(pid, n)
+      stats(pid)
+    else
+      board(pid)
+      stats(pid)
+    end
+  end
+
+  def chosen(n) when n in 1..9 do
+    module = to_string(__MODULE__)
+
+    with {:error, {:already_started, pid}} <- SudokuGame.start(module) do
+      chosen(pid, n)
+    end
+  end
+
+  def chosen(board_pid, n) when is_pid(board_pid) and n in 1..9 do
+    :persistent_term.put({__MODULE__, :chosen, board_pid}, n)
+    render(board_pid)
+  end
+
+  def write(x, y, n \\ nil, pid \\ nil)
+
+  def write(x, y, n, nil) do
+    module = to_string(__MODULE__)
+
+    if pid = SudokuGame.get_pid(module) do
+      write(x, y, n, pid)
+    else
+      {:error, :game_not_found}
+    end
+  end
+
+  def write(x, y, nil, pid) when x in 1..9 and y in 1..9 do
+    if n = :persistent_term.get({__MODULE__, :chosen, pid}, nil) do
       case SudokuGame.play(pid, x, y, n) do
         {:ok, :continue} ->
           banner(pid)
-          loop(pid)
+          render(pid)
 
         {:error, errors} ->
           banner(pid)
           show_errors(errors)
-          SudokuGame.play(pid, x, y, nil)
-          loop(pid)
+          SudokuGame.undo(pid)
+          render(pid)
 
         {:ok, :complete} ->
           game_over(pid)
       end
-    else
-      "q" ->
-        IO.puts("Use SudokuConsole.start/1 with the returned pid to continue.")
-        {:ok, pid}
     end
+  end
+
+  def write(x, y, n, pid) when n in 1..9 do
+    :persistent_term.put({__MODULE__, :chosen, pid}, n)
+    write(x, y, nil, pid)
   end
 
   defp game_over(pid) do
@@ -67,31 +112,6 @@ defmodule SudokuConsole do
     SudokuGame.stop(pid)
     IO.puts("G A M E    O V E R")
     :ok
-  end
-
-  defp get_options(prompt, valid_options, default) do
-    with <<option::binary-size(1), "\n">> <- String.downcase(IO.gets(prompt)),
-         true <- option in valid_options do
-      option
-    else
-      <<"\n">> ->
-        default
-
-      _ ->
-        IO.puts("incorrect option! valid: #{Enum.join(valid_options, ", ")}")
-        get_options(prompt, valid_options, default)
-    end
-  end
-
-  defp gets(prompt) do
-    case IO.gets(prompt) do
-      <<i::size(8), "\n">> when i in ?1..?9 ->
-        i - ?0
-
-      _ ->
-        IO.puts("incorrect number! valid: 1-9")
-        gets(prompt)
-    end
   end
 
   defp show_errors([]), do: :ok
@@ -105,20 +125,6 @@ defmodule SudokuConsole do
     IO.puts("ERROR: wrong number #{value} in position (#{x},#{y})")
   end
 
-  defp gets_or_nil(prompt) do
-    case IO.gets(prompt) do
-      <<i::size(8), "\n">> when i in ?0..?9 ->
-        i - ?0
-
-      <<"\n">> ->
-        nil
-
-      _ ->
-        IO.puts("incorrect number! valid: 0-9 or empty")
-        gets_or_nil(prompt)
-    end
-  end
-
   defp banner(pid) do
     """
     Altenwald Sudoku (#{inspect(pid)})
@@ -127,7 +133,7 @@ defmodule SudokuConsole do
 
   defp board(pid) do
     SudokuGame.get_board(pid)
-    |> to_string()
+    |> to_string(nil, & &1)
     |> IO.puts()
   end
 
@@ -151,15 +157,11 @@ defmodule SudokuConsole do
     )
   end
 
-  @spec to_string(Board.t() | [[0..9]]) :: String.t()
-  @spec to_string(Board.t() | [[0..9]], Board.content()) :: String.t()
   @spec to_string(Board.t() | [[0..9]], Board.content(), (1..9 -> String.t())) :: String.t()
   @doc """
   Show the board from SudokuGame.Board. We can pass or the board
   struct data or the list generated by `Enum.to_list/1`.
   """
-  def to_string(board, highlight_num \\ nil, highlight_fun \\ & &1)
-
   def to_string(%_{cells: cells}, highlight_num, highlight_fun) do
     draw(fn xo, yo, x, y ->
       case cells[x + xo][y + yo] do
@@ -176,7 +178,7 @@ defmodule SudokuConsole do
       |> Enum.at(y + yo - 1, [])
       |> Enum.at(x + xo - 1, 0)
       |> case do
-        0 -> "   "
+        nil -> "   "
         ^highlight_num -> highlight_fun.(" #{highlight_num} ")
         n -> " #{n} "
       end
@@ -212,6 +214,8 @@ defmodule SudokuConsole do
     @doc """
     Show the board from SudokuGame.Board.
     """
-    defdelegate to_string(board), to: SudokuConsole
+    def to_string(board) do
+      SudokuConsole.to_string(board, nil, & &1)
+    end
   end
 end

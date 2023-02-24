@@ -12,11 +12,22 @@ defmodule SudokuConsole.MixProject do
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      test_coverage: test_coverage(),
       deps: deps()
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+  defp test_coverage do
+    [
+      ignore_modules: [
+        SudokuGameMock
+      ],
+      summary: [
+        threshold: 80
+      ]
+    ]
+  end
+
   def application do
     [
       extra_applications: [:logger]

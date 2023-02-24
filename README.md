@@ -1,6 +1,6 @@
 # Sudoku
 
-Sudoku (数独) is an mathematical game very popular in Japan in 80s. The goal is to fill a grid of 9x9 cells (81 cells in total) avoiding repeat numbers vertically, horizontally or inside of the same subspace (3x3).
+Sudoku (数独) is a mathematical game very popular in Japan in the 80s. The goal is to fill a grid of 9x9 cells (81 cells in total) avoiding repeat numbers vertically, horizontally or inside of the same subspace (3x3).
 
 ## Installation
 
@@ -10,19 +10,13 @@ It's easy to install. You only need to have [Elixir](https://elixir-lang.org/ins
 git clone git@github.com:altenwald/sudoku.git
 ```
 
-Then you can see there are a new directory in that path called `sudoku`. You can go inside using the terminal and write:
+Then you can see there is a new directory in that path called `sudoku`. You can go inside using the terminal and write:
 
 ```
 iex -S mix run
 ```
 
-The Elixir shell will be running after the compilation. You can start the game using this command:
-
-```elixir
-SudokuConsole.start
-```
-
-Then you could see the screen of the game:
+The Elixir shell will be running after the compilation. Then you could see the screen of the game:
 
 ```
 ++---+---+---++---+---+---++---+---+---++
@@ -52,9 +46,14 @@ missing: 1=6 2=3 3=5 4=1 5=4 6=5 7=5 8=5 9=4      empty: 38
 time: 0 seconds
 ------------------------------------------------------------------------
 
-X=
+iex(1)>
 ```
 
-The system is asking you in every step for the X, Y and number to be put into that cell. It's giving you information about how many numbers are still missing and the time from the game started.
+You can use then one of the following functions (they are imported to the shell):
+
+- `chosen/1` - you can choose a number to play with. It's useful for highlighting them on the screen.
+- `write/2` - once you have chosen a number, you can write down a number on the board using the two parameters as `x` and `y` positions in the range of `1..9`.
+
+You can see more functions in the `SudokuConsole` module.
 
 Enjoy!
